@@ -24,7 +24,7 @@ typedef struct _task{
 
 //TODO: Define Periods for each task
 // e.g. const unsined long TASK1_PERIOD = <PERIOD>
-const unsigned long display_period = 200;
+const unsigned long display_period = 100;
 const unsigned long Sound_period = 100;
 const unsigned long GCD_PERIOD = findGCD(display_period, Sound_period);
 
