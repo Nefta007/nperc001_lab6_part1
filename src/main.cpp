@@ -7,6 +7,8 @@
 
 //TODO: declare variables for cross-task communication
 unsigned char turn_sound;
+unsigned char cnt;
+unsigned char motor_man;
 /* You have 5 tasks to implement for this lab */
 #define NUM_TASKS 2
 
@@ -94,34 +96,39 @@ int main(void)
 
     return 0;
 }
-// enum display_state{display_init, display_manual, display_auto};
-int TickFtn_Display(int state){
+int TickFtn_Display(int state){ //transition
     switch (state)
     {
     case display_init:
         if(!((PINC >> 2)&0x01)){
+            cnt = 0;
             turn_sound = 1;
+            motor_man = 1;
             state = display_manual;
         }
         break;
     
     case display_manual:
-        if(!((PINC >> 2)&0x01)){
-            turn_sound = 1;
-            state = display_auto;
+        if(cnt > 0){
+            state = display_manual;
         }
         else if(!((PINC >> 2)&0x01)){
-            state = display_manual;
+            cnt = 0;
+            turn_sound = 1;
+            motor_man = 0;
+            state = display_auto;
         }
         break;
     
     case display_auto:
-        if(!((PINC >> 2)&0x01)){
-            turn_sound = 1;
-            state = display_manual;
+        if(cnt > 0){
+            state = display_auto;
         }
         else if(!((PINC >> 2)&0x01)){
-            state = display_auto;
+            cnt = 0;
+            turn_sound = 1;
+            motor_man = 1;
+            state = display_manual;
         }
         break;
     default:
@@ -134,13 +141,27 @@ int TickFtn_Display(int state){
         break;
         
         case display_manual:
-        turn_sound = 0;
+        if(!((PINC >> 2)&0x01)){
+            cnt++;
+            // turn_sound = 0;
+        }
+        else if((PINC >> 2)&0x01){
+            cnt = 0;
+        }
+        //turn_sound = 0;
         lcd_clear();
         lcd_write_str("Mode: Manual");
         break;
 
         case display_auto:
-        turn_sound = 0;
+        if(!((PINC >> 2)&0x01)){
+            // turn_sound = 0;
+            cnt ++;
+        }
+        else if((PINC >> 2)&0x01){
+            cnt = 0;
+        }
+        //turn_sound = 0;
         lcd_clear();
         lcd_write_str("Mode: Auto");
         break;
@@ -161,12 +182,15 @@ int TickFtn_Sound(int state){
 
     case sound_off:
         if(!((PINC >> 2)&0x01)){
+            PORTB = SetBit(PORTB,0,1);
             state = sound_on_pressed;
         }
         else if(ADC_read(1) >= 800){
+            PORTB = SetBit(PORTB,0,1);
             state = sound_up;
         }
         else if(ADC_read(1) <= 200){
+            PORTB = SetBit(PORTB,0,1);
             state = sound_down;
         }
         else{
@@ -175,24 +199,33 @@ int TickFtn_Sound(int state){
         break;
     
     case sound_on_pressed:
-    if(((PINC >> 2)&0x01)){
-        state = sound_off;
+    if(!((PINC >> 2)&0x01)){
+        PORTB = SetBit(PORTB,0,0);
+        state = sound_on_pressed;
     }
     else{
-        state = sound_on_pressed; 
+        state = sound_off; 
     }
     break;
 
     case sound_up:
-    if(ADC_read(1) < 800){
-            state = sound_off;
-        }
+    if(ADC_read(1)>=800){
+        PORTB = SetBit(PORTB,0,0);
+        state = sound_up;
+    }
+    else{
+        state = sound_off;
+    }  
     break;
 
     case sound_down:
-    if(ADC_read(1) > 200){
-            state = sound_off;
-        }
+    if(ADC_read(1) <=200){
+       PORTB = SetBit(PORTB,0,0);
+        state = sound_down;
+    }
+    else{
+        state = sound_off;
+    }
     break;
 
     default:
@@ -205,23 +238,19 @@ int TickFtn_Sound(int state){
         break;
     
     case sound_off:
-        PORTB = SetBit(PORTB,0,0);
-        serial_println('off');
+        // PORTB = SetBit(PORTB,0,0);
         break;
     
     case sound_on_pressed:
-        PORTB = SetBit(PORTB,0,1);
-        serial_println('on');
+        // PORTB = SetBit(PORTB,0,0);
         break;
     
     case sound_up:
-        PORTB = SetBit(PORTB,0,1);
-        serial_println('on');
+        // PORTB = SetBit(PORTB,0,0);
         break;
 
     case sound_down:
-        PORTB = SetBit(PORTB,0,1);
-        serial_println('on');
+        // PORTB = SetBit(PORTB,0,0);
         break;
     
     default:
